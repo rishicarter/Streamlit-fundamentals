@@ -2,19 +2,34 @@ import pandas as pd
 import streamlit as st
 import matplotlib.pyplot as plt
 import seaborn as sns
+import time
 
 st.title("Penguins Rule!")
 st.markdown('Plots on Penguins..')
 penguin_file = st.file_uploader('Select Local Penguins CSV')
-if penguin_file is not None:
-    # st.write(penguin_file.name)
-    penguindf=pd.read_csv(penguin_file.name)
-    df=pd.read_csv(penguin_file.name)
-else:
-    df=pd.read_csv("penguins.csv")
-    penguindf=pd.read_csv("penguins.csv")
-    # st.stop()
 
+@st.cache_data
+def load_file(penguin_file):
+    """Loading the dataset.
+
+    Args:
+        penguin_file (str): Absolute location of file
+
+    Returns:
+        DataFrame: pandas dataframe with data
+    """
+    time.sleep(3)
+    if penguin_file is not None:
+        # st.write(penguin_file.name)
+        # penguindf=pd.read_csv(penguin_file.name)
+        df=pd.read_csv(penguin_file.name)
+    else:
+        df=pd.read_csv("penguins.csv")
+        # penguindf=pd.read_csv("penguins.csv")
+        # st.stop()
+    return df,df
+
+df,penguindf=load_file(penguin_file)
 # df=pd.read_csv("penguins.csv")
 # st.write(df.head())
 species=list(df.species.unique())
