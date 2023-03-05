@@ -7,7 +7,7 @@ import seaborn as sns
 import plotly.express as px
 
 # Functions ---------------
-@st.cache_data
+# @st.cache_data
 def get_value_from_choice(df,choice):
     return df[df['stock']==choice]['quantity'].values[0]
 
@@ -57,19 +57,21 @@ with tab_update:
         # All items list
         all_items=list(df['stock'].unique())
         
-        choice=st.selectbox('Enter Stock Item',all_items,key=-1)
+        choice=st.selectbox('Enter Stock Item',all_items,key='choice')
         st.write(df.loc[df['stock']==choice,'quantity'])
-        with col_update_form.form(key='Update_form'):
-            new_value=0
-            old_value=get_value_from_choice(df,choice)
-            # st.write(old_value)
-            new_value=st.number_input(f"New Value of Stock Item? (Old Value={old_value})",
-                                      min_value=0, value=old_value)
-            
-            submit_flg=st.form_submit_button('Submit')
-            if submit_flg:
-                df['quantity'] = np.where(df['stock']==choice, new_value, df['quantity'])
-                st.write(df)
-                st.write(df.loc[df['stock']==choice,'quantity'])
+        new_value=0
+        old_value=get_value_from_choice(df,choice)
+        # st.write(old_value)
+        new_value=st.number_input(f"New Value of Stock Item? (Old Value={old_value})",
+                                    min_value=0, value=old_value, key='new_value')
+        df['quantity'] = np.where(df['stock']==choice, new_value, df['quantity'])
+        st.write(df)
                 # # df.loc[df['stock']==choice,'quantity']=new_value
                 # st.success('Stock Info updated Successfully!')
+    
+    with col_data_editor:
+        edited_df = st.experimental_data_editor(df, num_rows="dynamic", key='update_editor')
+
+with tab_add:
+    col_add_form,col_add_editor=st.columns(2)
+    st.write(st.session_state)
