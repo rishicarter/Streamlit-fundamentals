@@ -1,7 +1,6 @@
 # Imports
 import pandas as pd
 import streamlit as st
-import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import time
@@ -18,7 +17,7 @@ def refresh_data(comp=st):
     col1.success('Data Added Successfully!!')
     with col2:
         with st.spinner('Refreshing data...'):
-            time.sleep(2)
+            time.sleep(1)
             st.experimental_rerun()
 
 #--------------------------
@@ -40,7 +39,7 @@ st.subheader('App to organise, manage and plan stock requirements.')
 
 # TODO: File handling using data_upload.py
 filepath='./stock_info.csv'
-main_df=pd.read_csv(filepath)
+main_df=pd.read_csv(filepath, encoding="utf8")
 
 # TODO: Remove duplicacy in df
 
@@ -51,6 +50,7 @@ df=main_df.copy()
 if selected_categories:
     df=df[df['category'].isin(selected_categories)].reset_index(drop=True)
 # df_table=st.dataframe(df)
+
 # Data Viz
 viz_container=st.container()
 plt.style.use('dark_background')
@@ -65,7 +65,7 @@ plt.ylabel("Quantity")
 plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0)
 viz_container.pyplot(fig_viz)
 with viz_container.expander('Show Table'):
-    df_table=st.dataframe(df)
+    df_table=st.dataframe(df, use_container_width=True)
 
 # Data Add/Update
 tab_update,tab_add,tab_free=st.tabs(["Update Stock","Add Stock","Full Control"])
@@ -99,36 +99,13 @@ with tab_update:
                              language='python')
             if col_update.button('Save Changes', key='update_button'):
                 update_index=main_df[main_df.stock==choice].index[0]
-                main_df.loc[update_index, 'stock'] = choice
-                main_df.loc[update_index, 'quantity'] = update_quant
-                main_df.loc[update_index, 'category'] = update_cat_value
-                main_df.to_csv(filepath,index=False)
+                row_add = [choice, update_quant, update_cat_value]
+                main_df.loc[update_index] = row_add
+                # main_df.loc[update_index, 'stock'] = choice
+                # main_df.loc[update_index, 'quantity'] = update_quant
+                # main_df.loc[update_index, 'category'] = update_cat_value
+                main_df.to_csv(filepath,encoding="utf8",index=False)
                 refresh_data(col_update)
-                
-            
-        
-# col_update_form, col_data_editor=st.columns(2)
-# with col_update_form:
-#     # All items list
-#     all_items=list(df['stock'].unique())
-#     choice=st.selectbox('Enter Stock Item',all_items,key='choice')
-#     st.write(df.loc[df['stock']==choice,'quantity'])
-#     new_value=0
-#     old_value=get_value_from_choice(df,choice)
-#     # st.write(old_value)
-#     new_value=st.number_input(f"New Value of Stock Item? (Old Value={old_value})",
-#                                 min_value=0, value=old_value, key='new_value')
-#     df['quantity'] = np.where(df['stock']==choice, new_value, df['quantity'])
-#     st.write(df)
-#             # # df.loc[df['stock']==choice,'quantity']=new_value
-#             # st.success('Stock Info updated Successfully!')
-
-# with col_data_editor:
-#     df = st.experimental_data_editor(df, key='update_editor')
-#     # st.experimental_rerun()
-#     # update_container.experimental_rerun()
-
-        
 
 # Tab for adding new items to the system.
 with tab_add:
@@ -142,31 +119,32 @@ with tab_add:
         add_quantity=col_add_quantity.number_input('Stock Quantity', min_value=0, disabled=quant_flg)
         cat_flg=False if add_quantity else True
         col_add_cat_radio,col_add_cat_value=st.columns(2)
-        add_cat_option=col_add_cat_radio.radio('Select Category option',
+        add_cat_option=col_add_cat_radio.radio('Category Type',
                                          ('Pre-existing Category','New Category'),
-                                         disabled=cat_flg)
+                                         disabled=cat_flg, key='add_cat_option')
         if add_cat_option=='Pre-existing Category':
-            add_cat_value=col_add_cat_value.selectbox('Select Category', options=df_categories,
-                                                      disabled=cat_flg)
+            add_cat_value=col_add_cat_value.selectbox('Category Value', options=df_categories,
+                                                      disabled=cat_flg, key='add_cat_value')
         elif add_cat_option=='New Category':
             add_cat_value=col_add_cat_value.text_input('Input Category', disabled=cat_flg)
         add_cat_value="" if cat_flg else add_cat_value
         button_flg=False if add_cat_value else True
-        if st.button('Save Changes', disabled=button_flg, key='add_button'):
-            temp_df=pd.DataFrame({'stock':add_stock,
-                                    'quantity':add_quantity,
-                                    'category':add_cat_value}, index=[0])
-            main_df=pd.concat([main_df,temp_df]).reset_index(drop=True)
-            main_df.to_csv(filepath,index=False)
+        col_add_changes,col_add_button=st.columns(2)
+        col_add_changes.code(f"(\n'Stock' : {add_stock}\n'Quantity' : {add_quantity}\n'Category' : {add_cat_value}\n)",
+                             language='python')
+        if col_add_button.button('Save Changes', disabled=button_flg, key='add_button'):
+            row_add = [add_stock, add_quantity, add_cat_value]
+            main_df.loc[len(df)] = row_add
+            main_df.to_csv(filepath,encoding="utf8",index=False)
             quant_flg,cat_flg,button_flg=True,True,True
-            refresh_data()
+            refresh_data(col_add_button)
                 
 # Tab with full control and quick changes!
 with tab_free:
     df = st.experimental_data_editor(df, num_rows='dynamic',
                                      key='update_editor', use_container_width=True)
     if st.button('Save Changes', key='free_button'):
-        df.to_csv(filepath,index=False)
+        df.to_csv(filepath,encoding="utf8",index=False)
         refresh_data()
                     
         
