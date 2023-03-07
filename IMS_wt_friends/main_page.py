@@ -38,7 +38,8 @@ st.title('Inventory Management with Friends!')
 st.subheader('App to organise, manage and plan stock requirements.')
 
 # TODO: File handling using data_upload.py
-filepath='./stock_info.csv'
+# filepath='./stock_info.csv'
+filepath='https://raw.githubusercontent.com/rishicarter/Streamlit-fundamentals/main/IMS_wt_friends/stock_info.csv'
 main_df=pd.read_csv(filepath, encoding="utf8")
 
 # TODO: Remove duplicacy in df
