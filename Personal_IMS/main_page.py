@@ -34,8 +34,8 @@ st.set_page_config(
 )
 
 # App Brief
-st.title('Inventory Management with Friends!')
-st.subheader('App to organise, manage and plan stock requirements.')
+st.title('Personal Food Stock Management System!')
+st.subheader('App to organise, manage and plan food stock requirements.')
 
 # TODO: File handling using data_upload.py
 # filepath='./stock_info.csv'
