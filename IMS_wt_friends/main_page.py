@@ -11,9 +11,13 @@ import time
 def get_value_from_choice(df,choice):
     return df[df['stock']==choice]['quantity'].values[0]
 
-def refresh_df():
-    # st.experimental_rerun()
-    pass
+def refresh_data():
+    col1,col2=st.columns(2)
+    col1.success('Data Added Successfully!!')
+    with col2:
+        with st.spinner('Refreshing data...'):
+            time.sleep(2)
+            st.experimental_rerun()
 
 #--------------------------
 
@@ -60,37 +64,43 @@ with viz_container.expander('Show Table'):
     df_table=st.dataframe(df)
 
 # Data Add/Update
-tab_update,tab_add=st.tabs(["Update Stock","Add Stock"])
+tab_update,tab_add,tab_free=st.tabs(["Update Stock","Add Stock","Full Control"])
 with tab_update:
     update_container=st.container()
     with update_container:
-        col_update_form, col_data_editor=st.columns(2)
-        with col_update_form:
-            # All items list
-            all_items=list(df['stock'].unique())
-            choice=st.selectbox('Enter Stock Item',all_items,key='choice')
-            st.write(df.loc[df['stock']==choice,'quantity'])
-            new_value=0
-            old_value=get_value_from_choice(df,choice)
-            # st.write(old_value)
-            new_value=st.number_input(f"New Value of Stock Item? (Old Value={old_value})",
-                                        min_value=0, value=old_value, key='new_value')
-            df['quantity'] = np.where(df['stock']==choice, new_value, df['quantity'])
-            st.write(df)
-                    # # df.loc[df['stock']==choice,'quantity']=new_value
-                    # st.success('Stock Info updated Successfully!')
-        
-        with col_data_editor:
-            df = st.experimental_data_editor(df, key='update_editor')
-            # st.experimental_rerun()
-            # update_container.experimental_rerun()
+        pass
+    
+# col_update_form, col_data_editor=st.columns(2)
+# with col_update_form:
+#     # All items list
+#     all_items=list(df['stock'].unique())
+#     choice=st.selectbox('Enter Stock Item',all_items,key='choice')
+#     st.write(df.loc[df['stock']==choice,'quantity'])
+#     new_value=0
+#     old_value=get_value_from_choice(df,choice)
+#     # st.write(old_value)
+#     new_value=st.number_input(f"New Value of Stock Item? (Old Value={old_value})",
+#                                 min_value=0, value=old_value, key='new_value')
+#     df['quantity'] = np.where(df['stock']==choice, new_value, df['quantity'])
+#     st.write(df)
+#             # # df.loc[df['stock']==choice,'quantity']=new_value
+#             # st.success('Stock Info updated Successfully!')
 
+# with col_data_editor:
+#     df = st.experimental_data_editor(df, key='update_editor')
+#     # st.experimental_rerun()
+#     # update_container.experimental_rerun()
+
+        
+
+# Tab for adding new items to the system.
 with tab_add:
     add_container=st.container()
     with add_container:
-        quant_flg,cat_flg=True,True
+        quant_flg,cat_flg,button_flg=True,True,True
         col_add_stock,col_add_quantity=st.columns(2)
-        add_stock=col_add_stock.text_input('Stock Item name', placeholder='add `(individual)` for single stock. Eg: Eggs (individual)')
+        add_stock=col_add_stock.text_input('Stock Item name', key='add_stock', value="",
+                                           placeholder='Eg: `Eggs (individual)` or `Milk`')
         quant_flg=False if add_stock else True
         add_quantity=col_add_quantity.number_input('Stock Quantity', min_value=0, disabled=quant_flg)
         cat_flg=False if add_quantity else True
@@ -103,31 +113,26 @@ with tab_add:
                                                       disabled=cat_flg)
         elif add_cat_option=='New Category':
             add_cat_value=col_add_cat_value.text_input('Input Category', disabled=cat_flg)
-        if cat_flg:
-            add_cat_value=""
-        if add_cat_value:
+        add_cat_value="" if cat_flg else add_cat_value
+        button_flg=False if add_cat_value else True
+        if st.button('Add Item', disabled=button_flg):
             temp_df=pd.DataFrame({'stock':add_stock,
-                                       'quantity':add_quantity,
-                                       'category':add_cat_value}, index=[0])
-            # temp_df=pd.DataFrame([[add_stock,add_quantity,add_cat_value]],
-            #                      columns=['stock','quantity','category'])
-            # temp_df={'stock':add_stock,
-            #          'quantity':[add_quantity],
-            #          'category':[add_cat_value]}
-            if st.button('Add Item'):
-                # st.dataframe(pd.DataFrame(df_table))
-                # st.write(temp_df)
-                main_df=pd.concat([main_df,temp_df]).reset_index(drop=True)
-                # st.write(main_df)
-                main_df.to_csv(filepath,index=False)
-                col1,col2=st.columns(2)
-                col1.success('Data Added Successfully!!')
-                with col2:
-                    with st.spinner('Refreshing data...'):
-                        time.sleep(2)
-                        st.experimental_rerun()
+                                    'quantity':add_quantity,
+                                    'category':add_cat_value}, index=[0])
+            main_df=pd.concat([main_df,temp_df]).reset_index(drop=True)
+            # st.write(main_df)
+            main_df.to_csv(filepath,index=False)
+            quant_flg,cat_flg,button_flg=True,True,True
+            refresh_data()
                 
-                
+# Tab with full control and quick changes!
+with tab_free:
+    df = st.experimental_data_editor(df, num_rows='dynamic',
+                                     key='update_editor', use_container_width=True)
+    if st.button('Save Changes'):
+        df.to_csv(filepath,index=False)
+        refresh_data()
+                    
         
 
 
