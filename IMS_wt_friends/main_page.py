@@ -8,11 +8,13 @@ import time
 
 # Functions ---------------
 # @st.cache_data
-def get_value_from_choice(df,choice):
+def get_quantity_from_choice(df,choice):
     return df[df['stock']==choice]['quantity'].values[0]
+def get_category_from_choice(df,choice):
+    return df[df['stock']==choice]['category'].values[0]
 
-def refresh_data():
-    col1,col2=st.columns(2)
+def refresh_data(comp=st):
+    col1,col2=comp.columns(2)
     col1.success('Data Added Successfully!!')
     with col2:
         with st.spinner('Refreshing data...'):
@@ -39,6 +41,8 @@ st.subheader('App to organise, manage and plan stock requirements.')
 # TODO: File handling using data_upload.py
 filepath='./stock_info.csv'
 main_df=pd.read_csv(filepath)
+
+# TODO: Remove duplicacy in df
 
 # Sidebar Filtering
 df_categories=main_df['category'].unique()
@@ -68,8 +72,41 @@ tab_update,tab_add,tab_free=st.tabs(["Update Stock","Add Stock","Full Control"])
 with tab_update:
     update_container=st.container()
     with update_container:
-        pass
-    
+        all_items=list(df['stock'].unique())
+        col_choice,col_quant=st.columns(2)
+        choice=col_choice.selectbox('Enter Stock Item',all_items,key='choice')
+        old_value,new_value=get_quantity_from_choice(df,choice),0
+        old_cat=get_category_from_choice(df,choice)
+        if choice:
+            update_quant=col_quant.number_input(f"New Quantity? (Old Value = {old_value})",
+                                 min_value=0, value=old_value, key='new_value')
+        col_cat_options,col_cat_val=st.columns(2)
+        if update_quant:
+            for i in range(len(df_categories)):
+                if df_categories[i]==old_cat:
+                    index_of_category=i
+            update_cat_option=col_cat_options.radio('Category Type',
+                                         ('Pre-existing Category','New Category'))
+            if update_cat_option=='Pre-existing Category':
+                update_cat_value=col_cat_val.selectbox('Category Value', 
+                                                       index=index_of_category,
+                                                       options=df_categories)
+            elif update_cat_option=='New Category':
+                update_cat_value=col_cat_val.text_input('Input Category')
+        if update_cat_value and update_quant and choice:
+            col_changes,col_update=st.columns(2)
+            col_changes.code(f"(\n'Stock' : {choice}\n'Quantity' : {old_value} -> {update_quant}\n'Category' : {old_cat} -> {update_cat_value}\n)",
+                             language='python')
+            if col_update.button('Save Changes', key='update_button'):
+                update_index=main_df[main_df.stock==choice].index[0]
+                main_df.loc[update_index, 'stock'] = choice
+                main_df.loc[update_index, 'quantity'] = update_quant
+                main_df.loc[update_index, 'category'] = update_cat_value
+                main_df.to_csv(filepath,index=False)
+                refresh_data(col_update)
+                
+            
+        
 # col_update_form, col_data_editor=st.columns(2)
 # with col_update_form:
 #     # All items list
@@ -115,12 +152,11 @@ with tab_add:
             add_cat_value=col_add_cat_value.text_input('Input Category', disabled=cat_flg)
         add_cat_value="" if cat_flg else add_cat_value
         button_flg=False if add_cat_value else True
-        if st.button('Add Item', disabled=button_flg):
+        if st.button('Save Changes', disabled=button_flg, key='add_button'):
             temp_df=pd.DataFrame({'stock':add_stock,
                                     'quantity':add_quantity,
                                     'category':add_cat_value}, index=[0])
             main_df=pd.concat([main_df,temp_df]).reset_index(drop=True)
-            # st.write(main_df)
             main_df.to_csv(filepath,index=False)
             quant_flg,cat_flg,button_flg=True,True,True
             refresh_data()
@@ -129,7 +165,7 @@ with tab_add:
 with tab_free:
     df = st.experimental_data_editor(df, num_rows='dynamic',
                                      key='update_editor', use_container_width=True)
-    if st.button('Save Changes'):
+    if st.button('Save Changes', key='free_button'):
         df.to_csv(filepath,index=False)
         refresh_data()
                     
